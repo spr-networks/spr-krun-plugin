@@ -21,9 +21,9 @@ Build the pinned local image with:
 ./build.sh
 ```
 
-The repository and its GHCR package are private during development. Hosts
-and CI jobs that build a derived plugin must authenticate to
-`ghcr.io/spr-networks/spr-krun-plugin` before resolving the base image.
+The repository and its multi-architecture GHCR package are public. Derived
+plugins can resolve `ghcr.io/spr-networks/spr-krun-plugin` without registry
+credentials.
 
 ## Consumer contract
 
