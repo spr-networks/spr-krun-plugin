@@ -1,0 +1,30 @@
+#!/bin/bash
+# Minimal PID 1 setup for an SPR-managed libkrun guest.
+set -euo pipefail
+
+if [ "$#" -eq 0 ]; then
+    echo "spr-krun-init needs a plugin command" >&2
+    exit 64
+fi
+
+VSOCK_PORT="${SPR_KRUN_VSOCK_PORT:-}"
+PLUGIN_SOCKET="${SPR_KRUN_PLUGIN_SOCKET:-}"
+if [ -n "$VSOCK_PORT" ] || [ -n "$PLUGIN_SOCKET" ]; then
+    if [ -z "$VSOCK_PORT" ] || [ -z "$PLUGIN_SOCKET" ]; then
+        echo "SPR_KRUN_VSOCK_PORT and SPR_KRUN_PLUGIN_SOCKET must be set together" >&2
+        exit 64
+    fi
+    mkdir -p "$(dirname "$PLUGIN_SOCKET")"
+    setpriv \
+        --bounding-set=-all \
+        --inh-caps=-all \
+        --ambient-caps=-all \
+        /usr/local/bin/spr-krun-vsock-proxy \
+        -port "$VSOCK_PORT" \
+        -socket "$PLUGIN_SOCKET" &
+fi
+
+# libkrun's embedded init has already configured virtio-net before this
+# entrypoint starts. The plugin receives only its explicitly declared OCI
+# capabilities; the background bridge above receives none.
+exec "$@"
