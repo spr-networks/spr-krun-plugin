@@ -35,6 +35,7 @@ RUN --mount=type=tmpfs,target=/root/go \
     go build -trimpath -ldflags "-s -w" -o /spr-krun-vsock-proxy .
 
 FROM base
+LABEL org.opencontainers.image.source="https://github.com/spr-networks/spr-krun-plugin"
 COPY --from=builder /spr-krun-vsock-proxy /usr/local/bin/
 COPY scripts/spr-krun-init /usr/local/bin/
 RUN chmod 0755 \
