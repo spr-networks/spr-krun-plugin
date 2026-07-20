@@ -44,7 +44,7 @@ annotations:
 ```yaml
 services:
   my-plugin:
-    runtime: krun-atlas
+    runtime: spr-krun
     network_mode: host
     networks: !reset []
     annotations:
