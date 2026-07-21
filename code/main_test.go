@@ -15,14 +15,25 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid",
 			cfg: config{
+				mode:        "listen",
 				port:        4040,
 				socketPath:  "/run/spr-krun-plugin/plugin.sock",
 				dialTimeout: time.Second,
 			},
 		},
 		{
+			name: "valid connect",
+			cfg: config{
+				mode:        "connect",
+				port:        4041,
+				socketPath:  "/run/spr-krun-plugin/eventbus.sock",
+				dialTimeout: time.Second,
+			},
+		},
+		{
 			name: "zero port",
 			cfg: config{
+				mode:        "listen",
 				socketPath:  "/run/plugin.sock",
 				dialTimeout: time.Second,
 			},
@@ -31,11 +42,22 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "relative socket",
 			cfg: config{
+				mode:        "listen",
 				port:        4040,
 				socketPath:  "plugin.sock",
 				dialTimeout: time.Second,
 			},
 			wantErr: "absolute",
+		},
+		{
+			name: "invalid mode",
+			cfg: config{
+				mode:        "dial",
+				port:        4040,
+				socketPath:  "/run/plugin.sock",
+				dialTimeout: time.Second,
+			},
+			wantErr: "mode",
 		},
 	}
 

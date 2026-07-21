@@ -24,6 +24,32 @@ if [ -n "$VSOCK_PORT" ] || [ -n "$PLUGIN_SOCKET" ]; then
         -socket "$PLUGIN_SOCKET" &
 fi
 
+HOST_VSOCK_PORT="${SPR_KRUN_HOST_VSOCK_PORT:-}"
+HOST_SOCKET="${SPR_KRUN_HOST_SOCKET:-}"
+if [ -n "$HOST_VSOCK_PORT" ] || [ -n "$HOST_SOCKET" ]; then
+    if [ -z "$HOST_VSOCK_PORT" ] || [ -z "$HOST_SOCKET" ]; then
+        echo "SPR_KRUN_HOST_VSOCK_PORT and SPR_KRUN_HOST_SOCKET must be set together" >&2
+        exit 64
+    fi
+    mkdir -p "$(dirname "$HOST_SOCKET")"
+    setpriv \
+        --bounding-set=-all \
+        --inh-caps=-all \
+        --ambient-caps=-all \
+        /usr/local/bin/spr-krun-vsock-proxy \
+        -mode connect \
+        -port "$HOST_VSOCK_PORT" \
+        -socket "$HOST_SOCKET" &
+    for ((i = 0; i < 100; i++)); do
+        [ -S "$HOST_SOCKET" ] && break
+        sleep 0.01
+    done
+    if [ ! -S "$HOST_SOCKET" ]; then
+        echo "host Unix socket proxy did not start" >&2
+        exit 1
+    fi
+fi
+
 # libkrun's embedded init has already configured virtio-net before this
 # entrypoint starts. The plugin receives only its explicitly declared OCI
 # capabilities; the background bridge above receives none.

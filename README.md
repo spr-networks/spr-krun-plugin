@@ -54,9 +54,13 @@ services:
       krun.net_mac: "02:53:50:52:40:41"
       krun.vsock_path: /state/plugins/my-plugin/api/socket
       krun.vsock_port: "4040"
+      krun.vsock_connect_path: /state/api/eventbus.sock
+      krun.vsock_connect_port: "4041"
     environment:
       SPR_KRUN_PLUGIN_SOCKET: /run/spr-krun-plugin/plugin.sock
       SPR_KRUN_VSOCK_PORT: "4040"
+      SPR_KRUN_HOST_SOCKET: /run/spr-krun-plugin/eventbus.sock
+      SPR_KRUN_HOST_VSOCK_PORT: "4041"
     devices:
       - /dev/net/tun:/dev/net/tun
 
@@ -87,6 +91,14 @@ SPR Unix socket → libkrun vsock 4040 → spr-krun-vsock-proxy
                 → guest-local plugin Unix socket
 ```
 
+A plugin can also reach an explicitly mapped host Unix socket without opening
+an IP listener:
+
+```text
+guest-local Unix socket → spr-krun-vsock-proxy → libkrun vsock 4041
+                        → host SPR Unix socket
+```
+
 Guest egress is:
 
 ```text
@@ -103,6 +115,5 @@ The runtime refuses TAP networking without a private OCI network namespace.
 It bridges the guest TAP to the Docker-provided `eth0` inside that namespace;
 the VMM and plugin never join SPR's host network namespace.
 
-The vsock bridge only starts when both `SPR_KRUN_VSOCK_PORT` and
-`SPR_KRUN_PLUGIN_SOCKET` are set, so the same derived image can retain a
-plain runc/gVisor diagnostic mode.
+Each direction starts only when both of its socket and port variables are set,
+so the same derived image can retain a plain runc/gVisor diagnostic mode.
