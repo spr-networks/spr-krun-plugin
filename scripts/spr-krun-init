@@ -7,6 +7,20 @@ if [ "$#" -eq 0 ]; then
     exit 64
 fi
 
+if [ ! -e /dev/fd ] && [ ! -L /dev/fd ]; then
+    ln -s /proc/self/fd /dev/fd
+fi
+for stream in stdin stdout stderr; do
+    if [ ! -e "/dev/$stream" ] && [ ! -L "/dev/$stream" ]; then
+        case "$stream" in
+            stdin) fd=0 ;;
+            stdout) fd=1 ;;
+            stderr) fd=2 ;;
+        esac
+        ln -s "/proc/self/fd/$fd" "/dev/$stream"
+    fi
+done
+
 VSOCK_PORT="${SPR_KRUN_VSOCK_PORT:-}"
 PLUGIN_SOCKET="${SPR_KRUN_PLUGIN_SOCKET:-}"
 if [ -n "$VSOCK_PORT" ] || [ -n "$PLUGIN_SOCKET" ]; then
