@@ -44,11 +44,13 @@ annotations:
 ```yaml
 services:
   my-plugin:
+    extends:
+      file: docker-compose.yml
+      service: my-plugin
     runtime: spr-krun
-    network_mode: host
-    networks: !reset []
     annotations:
-      krun.tap_name: kmyplugin0
+      krun.tap_name: kruntap0
+      krun.net_uplink: eth0
       krun.net_mac: "02:53:50:52:40:41"
       krun.vsock_path: /state/plugins/my-plugin/api/socket
       krun.vsock_port: "4040"
@@ -57,6 +59,12 @@ services:
       SPR_KRUN_VSOCK_PORT: "4040"
     devices:
       - /dev/net/tun:/dev/net/tun
+
+networks:
+  mypluginnet:
+    name: spr-my-plugin
+    driver_opts:
+      com.docker.network.bridge.name: spr-my-plugin
 ```
 
 The matching SPR plugin manifest declares the VM as a normal device:
@@ -64,7 +72,7 @@ The matching SPR plugin manifest declares the VM as a normal device:
 ```json
 {
   "NetworkCapabilities": {
-    "Interface": "kmyplugin0",
+    "Interface": "spr-my-plugin",
     "DeviceMAC": "02:53:50:52:40:41",
     "Policies": ["wan", "dns"],
     "Groups": []
@@ -82,13 +90,18 @@ SPR Unix socket → libkrun vsock 4040 → spr-krun-vsock-proxy
 Guest egress is:
 
 ```text
-plugin → guest virtio-net → host TAP → SPR CoreDHCP/router/firewall
+plugin → guest virtio-net → private TAP/bridge → Docker plugin network
+       → SPR CoreDHCP/router/firewall
 ```
 
 The host runtime must add the TAP with libkrun's
 `NET_FLAG_DHCP_CLIENT`. SPR's runtime patch gives the embedded client bounded
 two-second retries because upstream's single 100 ms wait is too brittle for
 an external router.
+
+The runtime refuses TAP networking without a private OCI network namespace.
+It bridges the guest TAP to the Docker-provided `eth0` inside that namespace;
+the VMM and plugin never join SPR's host network namespace.
 
 The vsock bridge only starts when both `SPR_KRUN_VSOCK_PORT` and
 `SPR_KRUN_PLUGIN_SOCKET` are set, so the same derived image can retain a
