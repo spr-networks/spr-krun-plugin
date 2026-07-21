@@ -32,12 +32,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/spr-networks/spr-krun-plugin:latest
-
-      - name: Make container package public
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >-
-          gh api
-          --method PATCH
-          /orgs/${{ github.repository_owner }}/packages/container/spr-krun-plugin
-          -f visibility=public
